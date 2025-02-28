@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const http = require('http');
+const cors = require('cors'); // Import CORS
 const { Server } = require('socket.io');
 require('dotenv').config();
 const apiRoutes = require('./routes/api');
