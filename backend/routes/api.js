@@ -197,7 +197,7 @@ router.post('/matches/:id/update', async (req, res) => {
 
     const ballCount = match.ballByBall.length;
     const currentOver = Math.floor(ballCount / 6) + 1;
-    const currentBall = ballCount % 6 || (ballCount === 0 ? 0 : 1);
+    const currentBall = ballCount % 6 || (ballCount === 0 ? 0 : 6);
     const overString = ballCount === 0 ? '1.0' : `${currentOver}.${currentBall}`;
 
     let ballEvent = {
@@ -246,7 +246,7 @@ router.post('/matches/:id/update', async (req, res) => {
         ];
       }
       legalDeliveries += 1;
-    } else if (event === 'Dot') { // Dot Ball (0 runs)
+    } else if (event === 'Dot') { // Dot Ball (0 runs) - ADD THIS BLOCK
       match.score[battingTeamKey].overs += 1 / 6;
       match.currentPartnership.balls += 1;
 
