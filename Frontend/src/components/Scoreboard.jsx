@@ -4,7 +4,7 @@ import io from 'socket.io-client';
 import AdminControls from './AdminControls';
 import PasswordPrompt from './PasswordPrompt';
 
-const socket = io('http://localhost:5000');
+const socket = io('https://matchupx-1.onrender.com');
 
 function Scoreboard() {
   const [match, setMatch] = useState(null);
