@@ -124,45 +124,6 @@ const Home = () => {
         </div>
       </div>
 
-      {/* App Section */}
-      <div className="bg-gray-50 py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
-            <div className="order-2 md:order-1">
-              <img
-                src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?auto=format&fit=crop&w=800&q=80"
-                alt="Mobile App"
-                className="rounded-lg shadow-2xl"
-              />
-            </div>
-            <div className="order-1 md:order-2">
-              <h2 className="text-2xl md:text-3xl font-bold mb-6">Everything You Need in One App</h2>
-              <div className="space-y-6">
-                {[
-                  {
-                    title: "Real-time Updates",
-                    description: "Get instant notifications for wickets, boundaries, and key moments"
-                  },
-                  {
-                    title: "Interactive Scorecards",
-                    description: "Detailed match statistics with interactive visualizations"
-                  },
-                  {
-                    title: "Team Analytics",
-                    description: "Advanced team and player performance analytics"
-                  }
-                ].map((feature, index) => (
-                  <div key={index}>
-                    <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                    <p className="text-gray-600">{feature.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
