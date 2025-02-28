@@ -9,6 +9,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
+
+// Configure CORS to allow all origins
+app.use(cors({
+  origin: '*' // Allow requests from any origin
+}));
+
+
 // Middleware to attach io to req object
 app.use((req, res, next) => {
   req.io = io;
