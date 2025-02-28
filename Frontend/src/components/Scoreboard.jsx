@@ -15,7 +15,7 @@ function Scoreboard() {
   useEffect(() => {
     const fetchMatch = async () => {
       try {
-        const res = await axios.get(`https://matchupx-1.onrender.comhttps://matchupx-1.onrender.com/api/matches/${matchId}`);
+        const res = await axios.get(`https://matchupx-1.onrender.com/api/matches/${matchId}`);
         setMatch(res.data);
       } catch (err) {
         console.error('Error fetching match:', err);
