@@ -11,7 +11,7 @@ function MatchSchedule() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get('/api/matches')
+    axios.get('https://matchupx-1.onrender.com/api/matches')
       .then((res) => {
         console.log('Matches response:', res.data);
         setMatches(res.data);
@@ -24,7 +24,7 @@ function MatchSchedule() {
   }, []);
 
   const createFixedSchedule = async () => {
-    const teams = await axios.get('/api/teams').then(res => res.data);
+    const teams = await axios.get('https://matchupx-1.onrender.com/api/teams').then(res => res.data);
     if (teams.length !== 4) return alert('Expected 4 teams');
   
     const schedule = [];
@@ -60,8 +60,8 @@ function MatchSchedule() {
       });
     });
   
-    await Promise.all(schedule.map(match => axios.post('/api/matches', match)));
-    setMatches(await axios.get('/api/matches').then(res => res.data));
+    await Promise.all(schedule.map(match => axios.post('https://matchupx-1.onrender.com/api/matches', match)));
+    setMatches(await axios.get('https://matchupx-1.onrender.com/api/matches').then(res => res.data));
   };
 
   const handleTossDecision = async () => {
@@ -69,13 +69,13 @@ function MatchSchedule() {
     const match = matches.find(m => m._id === openTossDialog);
     if (!match) return alert('Match not found');
 
-    await axios.patch(`/api/matches/${openTossDialog}`, {
+    await axios.patch(`https://matchupx-1.onrender.com/api/matches/${openTossDialog}`, {
       toss: selectedBattingTeam,
       currentBattingTeam: match.team1.name === selectedBattingTeam ? 'team1' : 'team2',
       status: 'in-progress',
     });
 
-    setMatches(await axios.get('/api/matches').then(res => res.data));
+    setMatches(await axios.get('https://matchupx-1.onrender.com/api/matches').then(res => res.data));
     setOpenTossDialog(null);
     setSelectedBattingTeam('');
     navigate(`/matches/${openTossDialog}`);

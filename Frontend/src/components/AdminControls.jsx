@@ -38,7 +38,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
       return;
     }
     try {
-      const response = await axios.patch(`/api/matches/${matchId}`, { currentBattingTeam: selectedBattingTeam });
+      const response = await axios.patch(`https://matchupx-1.onrender.com/api/matches/${matchId}`, { currentBattingTeam: selectedBattingTeam });
       setMatch(response.data);
       setSelectedBattingTeam('');
       setIsTeamDecided(true);
@@ -50,7 +50,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
 
   const setPlayers = async (players) => {
     try {
-      const response = await axios.post(`/api/matches/${matchId}/setPlayers`, players);
+      const response = await axios.post(`https://matchupx-1.onrender.com/api/matches/${matchId}/setPlayers`, players);
       setMatch(response.data);
       setError('');
       if (players.striker) {
@@ -94,7 +94,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
         eventData.additionalRuns = extraRuns;
       }
 
-      const response = await axios.post(`/api/matches/${matchId}/update`, eventData);
+      const response = await axios.post(`https://matchupx-1.onrender.com/api/matches/${matchId}/update`, eventData);
       setMatch(response.data);
       setWicketType('');
       setRunsOnWicket(0);
@@ -115,7 +115,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
 
   const undoLastBall = async () => {
     try {
-      const response = await axios.delete(`/api/matches/${matchId}/ball`);
+      const response = await axios.delete(`https://matchupx-1.onrender.com/api/matches/${matchId}/ball`);
       setMatch(response.data);
       setWicketType('');
       setRunsOnWicket(0);
@@ -132,7 +132,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
   const resetMatch = async () => {
     if (!confirm('Reset the match?')) return;
     try {
-      const response = await axios.post(`/api/matches/${matchId}/reset`);
+      const response = await axios.post(`https://matchupx-1.onrender.com/api/matches/${matchId}/reset`);
       setMatch(response.data);
       setNeedsNewStriker(true);
       setNeedsNewBowler(true);
