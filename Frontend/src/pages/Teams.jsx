@@ -9,7 +9,7 @@ function TeamList() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    axios.get('/api/teams')
+    axios.get('https://matchupx-1.onrender.com/api/teams')
       .then((res) => {
         console.log('Teams response:', res.data);
         const data = Array.isArray(res.data) ? res.data : [];
