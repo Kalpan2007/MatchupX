@@ -246,7 +246,7 @@ router.post('/matches/:id/update', async (req, res) => {
         ];
       }
       legalDeliveries += 1;
-    } else if (event === 'Dot') { // Dot Ball (0 runs) - ADD THIS BLOCK
+    } else if (event === 'Dot') { // Add this block for Dot Ball
       match.score[battingTeamKey].overs += 1 / 6;
       match.currentPartnership.balls += 1;
 
@@ -310,7 +310,6 @@ router.post('/matches/:id/update', async (req, res) => {
       return res.status(400).json({ error: `Invalid event type: ${event}` });
     }
 
-    // Check for over completion and rotate strike
     if (legalDeliveries % 6 === 0 && legalDeliveries > 0) {
       match.currentBowler = null;
       [match.currentBatsmen.striker, match.currentBatsmen.nonStriker] = [
