@@ -1,6 +1,17 @@
+// AdminControls.jsx
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+
+const getBackendUrl = () => {
+  const { hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000';
+  }
+  return 'https://matchupx-1.onrender.com';
+};
+
+const BACKEND_URL = getBackendUrl();
 
 function AdminControls({ match, matchId, setMatch, onClose }) {
   const [wicketType, setWicketType] = useState('');
@@ -38,7 +49,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
       return;
     }
     try {
-      const response = await axios.patch(`/api/matches/${matchId}`, { currentBattingTeam: selectedBattingTeam });
+      const response = await axios.patch(`${BACKEND_URL}/api/matches/${matchId}`, { currentBattingTeam: selectedBattingTeam });
       setMatch(response.data);
       setSelectedBattingTeam('');
       setIsTeamDecided(true);
@@ -50,21 +61,12 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
 
   const setPlayers = async (players) => {
     try {
-      const response = await axios.post(`/api/matches/${matchId}/setPlayers`, players);
+      const response = await axios.post(`${BACKEND_URL}/api/matches/${matchId}/setPlayers`, players);
       setMatch(response.data);
       setError('');
-      if (players.striker) {
-        setSelectedStriker('');
-        setNeedsNewStriker(false);
-      }
-      if (players.nonStriker) {
-        setSelectedNonStriker('');
-        setNeedsNewNonStriker(false);
-      }
-      if (players.bowler) {
-        setSelectedBowler('');
-        setNeedsNewBowler(false);
-      }
+      if (players.striker) setSelectedStriker(''), setNeedsNewStriker(false);
+      if (players.nonStriker) setSelectedNonStriker(''), setNeedsNewNonStriker(false);
+      if (players.bowler) setSelectedBowler(''), setNeedsNewBowler(false);
     } catch (err) {
       setError('Failed to set players: ' + (err.response?.data?.error || err.message));
     }
@@ -94,7 +96,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
         eventData.additionalRuns = extraRuns;
       }
 
-      const response = await axios.post(`/api/matches/${matchId}/update`, eventData);
+      const response = await axios.post(`${BACKEND_URL}/api/matches/${matchId}/update`, eventData);
       setMatch(response.data);
       setWicketType('');
       setRunsOnWicket(0);
@@ -115,7 +117,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
 
   const undoLastBall = async () => {
     try {
-      const response = await axios.delete(`/api/matches/${matchId}/ball`);
+      const response = await axios.delete(`${BACKEND_URL}/api/matches/${matchId}/ball`);
       setMatch(response.data);
       setWicketType('');
       setRunsOnWicket(0);
@@ -132,7 +134,7 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
   const resetMatch = async () => {
     if (!confirm('Reset the match?')) return;
     try {
-      const response = await axios.post(`/api/matches/${matchId}/reset`);
+      const response = await axios.post(`${BACKEND_URL}/api/matches/${matchId}/reset`);
       setMatch(response.data);
       setNeedsNewStriker(true);
       setNeedsNewBowler(true);
@@ -225,6 +227,13 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
                 <p className="text-white">Bowler: <span className="text-red-400 font-semibold">{match.currentBowler.name}</span></p>
               </div>
               <div className="flex flex-wrap gap-3">
+                <Button
+                  variant="outlined"
+                  onClick={() => updateScore('Dot')}
+                  className="bg-white text-white hover:bg-gray-200 border border-blue-800 px-4 py-2 rounded-full shadow-[0_0_10px_rgba(0,112,255,0.7)] transition duration-300"
+                >
+                  Dot Ball
+                </Button>
                 {[1, 2, 3, 4, 6].map(run => (
                   <Button
                     key={run}
@@ -308,4 +317,4 @@ function AdminControls({ match, matchId, setMatch, onClose }) {
   );
 }
 
-export default AdminControls;                               
+export default AdminControls;

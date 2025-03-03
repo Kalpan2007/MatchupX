@@ -4,7 +4,17 @@ import io from 'socket.io-client';
 import AdminControls from './AdminControls';
 import PasswordPrompt from './PasswordPrompt';
 
-const socket = io('http://localhost:5000');
+// Dynamically determine the backend URL based on the frontend environment
+const getBackendUrl = () => {
+  const { hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:5000'; // Local backend
+  }
+  return 'https://matchupx-1.onrender.com'; // Production backend
+};
+
+const BACKEND_URL = 'https://matchupx-1.onrender.com'; // Use deployed backend
+const socket = io(BACKEND_URL, { transports: ['websocket', 'polling'], reconnection: true });
 
 function Scoreboard() {
   const [match, setMatch] = useState(null);
@@ -15,28 +25,28 @@ function Scoreboard() {
   useEffect(() => {
     const fetchMatch = async () => {
       try {
-        const res = await axios.get(`/api/matches/${matchId}`);
+        const res = await axios.get(`${BACKEND_URL}/api/matches/${matchId}`);
         setMatch(res.data);
       } catch (err) {
-        console.error('Error fetching match:', err);
+        console.error('Error fetching match:', err.message);
       }
     };
     fetchMatch();
 
+    socket.on('connect', () => console.log('Socket connected to', BACKEND_URL));
     socket.on('scoreUpdate', (data) => {
       if (data._id === matchId) {
-        console.log('Received score update:', data); // Debug log
-        setMatch(prevMatch => {
-          if (JSON.stringify(prevMatch) !== JSON.stringify(data)) {
-            console.log('Updating match state:', data);
-            return { ...data }; // Force re-render with new object
-          }
-          return prevMatch;
-        });
+        console.log('Received score update:', data);
+        setMatch(prevMatch => (JSON.stringify(prevMatch) !== JSON.stringify(data) ? { ...data } : prevMatch));
       }
     });
+    socket.on('connect_error', (err) => console.error('Socket connection error:', err.message));
 
-    return () => socket.off('scoreUpdate');
+    return () => {
+      socket.off('scoreUpdate');
+      socket.off('connect');
+      socket.off('connect_error');
+    };
   }, [matchId]);
 
   if (!match) return <div className="p-4 text-white">Loading...</div>;
@@ -91,15 +101,12 @@ function Scoreboard() {
       <h1 className="text-3xl font-bold mb-6 text-center text-yellow-400">Match Scoreboard</h1>
       <p className="mb-6 text-center text-gray-300">Toss: {match.toss ? (match.toss === match.team1._id ? match.team1.name : match.team2.name) : 'Not decided'} | Batting: <span className="text-green-400">{battingTeam.name}</span></p>
 
-      {/* Match Info and Current Players */}
       <div className="max-w-4xl mx-auto bg-[#1A2D46] p-6 rounded-lg shadow-lg space-y-4">
-        {/* Team Scores */}
         <div className="flex justify-between text-xl font-bold text-gray-300 mb-4">
           <span>{battingTeam.name}: {match.score[battingTeam === match.team1 ? 'team1' : 'team2'].runs}/{match.score[battingTeam === match.team1 ? 'team1' : 'team2'].wickets} ({formatOvers(match.score[battingTeam === match.team1 ? 'team1' : 'team2'].overs)} ov)</span>
           <span>{bowlingTeam.name}: {match.score[bowlingTeam === match.team1 ? 'team1' : 'team2'].runs}/{match.score[bowlingTeam === match.team1 ? 'team1' : 'team2'].wickets} ({formatOvers(match.score[bowlingTeam === match.team1 ? 'team1' : 'team2'].overs)} ov)</span>
         </div>
 
-        {/* Current Players and Stats */}
         <div className="space-y-3">
           <p className="text-gray-300">Partnership: <span className="text-yellow-400">{match.currentPartnership.runs} ({match.currentPartnership.balls} balls)</span></p>
           <p className="text-gray-300">Striker: <span className="text-green-400">{striker.name}</span> - {striker.runs}/{striker.balls}</p>

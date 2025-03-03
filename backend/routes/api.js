@@ -176,6 +176,9 @@ router.post('/matches/:id/setPlayers', async (req, res) => {
 });
 
 // Update score with cricket logic, starting from 0-0, with over starting at 1.0
+// In your router file (backend):
+
+// Update score with cricket logic, including Dot ball
 router.post('/matches/:id/update', async (req, res) => {
   console.log('POST /api/matches/:id/update called with body:', req.body);
   try {
@@ -187,7 +190,6 @@ router.post('/matches/:id/update', async (req, res) => {
     const battingTeamKey = match.currentBattingTeam === 'team1' ? 'team1' : 'team2';
     const bowlingTeamKey = battingTeamKey === 'team1' ? 'team2' : 'team1';
     const battingTeam = match.currentBattingTeam === 'team1' ? match.team1 : match.team2;
-    const bowlingTeam = match.currentBattingTeam === 'team1' ? match.team2 : match.team1;
 
     if (!event || typeof event !== 'string' || event.trim() === '') {
       return res.status(400).json({ error: 'Event is required and must be a non-empty string' });
@@ -195,7 +197,7 @@ router.post('/matches/:id/update', async (req, res) => {
 
     const ballCount = match.ballByBall.length;
     const currentOver = Math.floor(ballCount / 6) + 1;
-    const currentBall = ballCount % 6 || (ballCount === 0 ? 0 : 1);
+    const currentBall = ballCount % 6 || (ballCount === 0 ? 0 : 6);
     const overString = ballCount === 0 ? '1.0' : `${currentOver}.${currentBall}`;
 
     let ballEvent = {
@@ -219,10 +221,6 @@ router.post('/matches/:id/update', async (req, res) => {
     const strikerPlayer = match.currentBatsmen.striker;
     const nonStrikerPlayer = match.currentBatsmen.nonStriker;
     const bowlerPlayer = match.currentBowler;
-
-    if (!strikerPlayer.name || !bowlerPlayer.name || !nonStrikerPlayer.name) {
-      return res.status(400).json({ error: 'Striker, bowler, or non-striker not found in current match state' });
-    }
 
     let legalDeliveries = match.ballByBall.filter(b => !['Wide', 'No Ball'].includes(b.event)).length;
 
@@ -248,17 +246,20 @@ router.post('/matches/:id/update', async (req, res) => {
         ];
       }
       legalDeliveries += 1;
+    } else if (event === 'Dot') { // Add this block for Dot Ball
+      match.score[battingTeamKey].overs += 1 / 6;
+      match.currentPartnership.balls += 1;
+
+      strikerPlayer.balls += 1;
+      bowlerPlayer.overs += 1 / 6;
+
+      legalDeliveries += 1;
     } else if (event === 'Wide') { // Wide
       match.score[battingTeamKey].runs += 1;
       bowlerPlayer.runs += 1;
       if (additionalRuns > 0) {
         match.score[battingTeamKey].runs += additionalRuns;
         bowlerPlayer.runs += additionalRuns;
-        if (additionalRuns === 4 || additionalRuns === 6) {
-          strikerPlayer.balls += 1;
-          if (additionalRuns === 4) strikerPlayer.fours += 1;
-          if (additionalRuns === 6) strikerPlayer.sixes += 1;
-        }
         if (additionalRuns % 2 === 1) {
           [match.currentBatsmen.striker, match.currentBatsmen.nonStriker] = [
             match.currentBatsmen.nonStriker,
@@ -275,8 +276,6 @@ router.post('/matches/:id/update', async (req, res) => {
         match.score[battingTeamKey].runs += additionalRuns;
         bowlerPlayer.runs += additionalRuns;
         strikerPlayer.balls += 1;
-        if (additionalRuns === 4) strikerPlayer.fours += 1;
-        if (additionalRuns === 6) strikerPlayer.sixes += 1;
         if (additionalRuns % 2 === 1) {
           [match.currentBatsmen.striker, match.currentBatsmen.nonStriker] = [
             match.currentBatsmen.nonStriker,
@@ -311,7 +310,6 @@ router.post('/matches/:id/update', async (req, res) => {
       return res.status(400).json({ error: `Invalid event type: ${event}` });
     }
 
-    // Check for over completion and rotate strike
     if (legalDeliveries % 6 === 0 && legalDeliveries > 0) {
       match.currentBowler = null;
       [match.currentBatsmen.striker, match.currentBatsmen.nonStriker] = [
@@ -338,6 +336,84 @@ router.post('/matches/:id/update', async (req, res) => {
   }
 });
 
+// Undo last ball (updated to handle Dot)
+router.delete('/matches/:id/ball', async (req, res) => {
+  console.log('DELETE /api/matches/:id/ball called with id:', req.params.id);
+  try {
+    const match = await Match.findById(req.params.id).populate('team1 team2');
+    if (!match) return res.status(404).json({ error: 'Match not found' });
+
+    const lastBall = match.ballByBall.pop();
+    if (!lastBall) return res.status(400).json({ error: 'No balls to undo' });
+
+    const battingTeamKey = lastBall.team === 'team1' ? 'team1' : 'team2';
+    const bowlingTeam = match.currentBattingTeam === 'team1' ? match.team2.players : match.team1.players;
+
+    if (!isNaN(parseInt(lastBall.event))) {
+      match.score[battingTeamKey].runs -= parseInt(lastBall.event);
+      match.score[battingTeamKey].overs -= 1 / 6;
+      match.currentPartnership.runs -= parseInt(lastBall.event);
+      match.currentPartnership.balls -= 1;
+
+      const striker = match.currentBatsmen.striker || { runs: 0, balls: 0, fours: 0, sixes: 0 };
+      striker.runs -= parseInt(lastBall.event);
+      striker.balls -= 1;
+      if (parseInt(lastBall.event) === 4) striker.fours -= 1;
+      if (parseInt(lastBall.event) === 6) striker.sixes -= 1;
+
+      const bowlerObj = bowlingTeam.find(p => p.name.toLowerCase() === lastBall.bowler.toLowerCase().trim()) || { overs: 0, runs: 0 };
+      bowlerObj.overs -= 1 / 6;
+      bowlerObj.runs -= parseInt(lastBall.event);
+    } else if (lastBall.event === 'Dot') {
+      match.score[battingTeamKey].overs -= 1 / 6;
+      match.currentPartnership.balls -= 1;
+
+      const striker = match.currentBatsmen.striker || { balls: 0 };
+      striker.balls -= 1;
+
+      const bowlerObj = bowlingTeam.find(p => p.name.toLowerCase() === lastBall.bowler.toLowerCase().trim()) || { overs: 0 };
+      bowlerObj.overs -= 1 / 6;
+    } else if (lastBall.event === 'Wide' || lastBall.event === 'No Ball') {
+      const totalRuns = 1 + (lastBall.additionalRuns || 0);
+      match.score[battingTeamKey].runs -= totalRuns;
+      const bowlerObj = bowlingTeam.find(p => p.name.toLowerCase() === lastBall.bowler.toLowerCase().trim()) || { runs: 0 };
+      bowlerObj.runs -= totalRuns;
+      if (lastBall.additionalRuns) {
+        const striker = match.currentBatsmen.striker || { runs: 0 };
+        striker.runs -= lastBall.additionalRuns;
+      }
+    } else if (lastBall.event === 'Wicket') {
+      match.score[battingTeamKey].wickets -= 1;
+      match.score[battingTeamKey].overs -= 1 / 6;
+      match.currentPartnership.runs = 0;
+      match.currentPartnership.balls = 0;
+
+      const strikerOut = match.currentBatsmen.striker || { out: false, balls: 0 };
+      strikerOut.out = false;
+      strikerOut.balls -= 1;
+
+      const bowlerObj = bowlingTeam.find(p => p.name.toLowerCase() === lastBall.bowler.toLowerCase().trim()) || { overs: 0, wickets: 0, runs: 0 };
+      bowlerObj.overs -= 1 / 6;
+      bowlerObj.wickets -= 1;
+      bowlerObj.runs -= (lastBall.runsOnWicket || 0);
+
+      match.currentBatsmen.striker = match.currentBatsmen.striker || null;
+    }
+
+    if (match.ballByBall.length % 6 === 0 && match.ballByBall.length > 0) {
+      match.currentBowler = null;
+    } else if (match.ballByBall.length === 0) {
+      match.score[battingTeamKey].overs = 0;
+    }
+
+    await match.save();
+    req.io.emit('scoreUpdate', match);
+    res.json(match);
+  } catch (err) {
+    console.error('Error undoing last ball:', err);
+    res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+});
 // Undo last ball
 router.delete('/matches/:id/ball', async (req, res) => {
   console.log('DELETE /api/matches/:id/ball called with id:', req.params.id);
